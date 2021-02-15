@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class FSWalker {
     public FSWalker(String root, FileEnumerator.Type type, int threadCount) throws InterruptedException {
@@ -50,16 +53,15 @@ public class FSWalker {
     }
     public Directory getRoot(){return rootDirectory;}
     
-    public LinkedList<String> collectFiles(){
-        LinkedList<String> files = new LinkedList<>();
+    public HashMap<String, Directory> collectFiles(){
+        HashMap<String, Directory> files = new HashMap<>();
         collectDirectoryFiles(rootDirectory, files);
         return files;
     }
-    private void collectDirectoryFiles(Directory dir, LinkedList<String> files){
+    private void collectDirectoryFiles(Directory dir, HashMap<String, Directory> files){
         String dirpath = dir.getDirPath();
-        for (String name : dir.getFileNames())
-            files.add(dirpath + name);
-        for (Directory d : dir.getDirectories())
+        files.put(dirpath, dir);
+        for (Directory d : dir.getDirectories().values())
             collectDirectoryFiles(d, files);
     }
     
@@ -72,12 +74,13 @@ public class FSWalker {
             try {
                     Directory curDir = directory;
                     while (curDir != null && curDir.enumerateEntries(enumerator)) {
-                        ArrayList<Directory> subdirs = curDir.getDirectories();
+                        HashMap<String, Directory> subdirs = curDir.getDirectories();
                         if (!subdirs.isEmpty()) {
-                            for (int i = 0; i < subdirs.size() - 1; i++) {
-                                    threadPool.addTask(new WalkTask(subdirs.get(i)));
-                            }
-                            curDir = subdirs.get(subdirs.size() - 1);
+                            Iterator<Map.Entry<String, Directory>> iter = subdirs.entrySet().iterator();
+                            curDir = iter.next().getValue();
+                            while (iter.hasNext()){
+                                threadPool.addTask(new WalkTask(iter.next().getValue()));
+                            }                            
                         } else
                             curDir = null;
                     }

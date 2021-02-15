@@ -40,8 +40,8 @@ public class Directory {
     public ArrayList<String> getFileNames() {
         return fileNames;
     }
-    public ArrayList<Directory> getDirectories(){
-        return new ArrayList<>(subdirs.values());
+    public HashMap<String, Directory> getDirectories(){
+        return subdirs;
     }
     
     @Override
